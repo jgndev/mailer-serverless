@@ -1,0 +1,11 @@
+# Environment variables
+sendgrid.env
+.env
+
+# Node modules
+node_modules/
+
+# Editors
+.vscode/
+.idea/
+.vercel
