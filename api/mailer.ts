@@ -1,13 +1,10 @@
 import {VercelRequest, VercelResponse} from "@vercel/node";
 import {Message} from "./interfaces/message";
+import {MessageRequest} from "./interfaces/messageRequest";
 const sgMail = require('@sendgrid/mail');
-
-const validEmail: RegExp = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
 const sendMail = async (message: Message) => {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-    // let status = '';
 
     await sgMail
         .send(message)
@@ -39,40 +36,26 @@ const allowCors = fn => async (req, res) => {
 }
 
 const handler = async (request: VercelRequest, response: VercelResponse) => {
-    const body = request.body;
+    console.log(request.body);
+    const body = request.body as MessageRequest;
 
-    // Don't send an email with an invalid email address.
-    if (!validEmail.test(body.from)) {
-        return response.status(400).send('Invalid email address');
-    }
+    console.log(body);
 
     const html = `
         <div>
             <span>From: ${body.name}</span><br />
-            <span>Email: ${body.email}</span>
-            <span>Phone: ${body.phone}</span>
-            <span>Subject: ${body.subject}</span><br />
+            <span>Email: ${body.email}</span><br />
+            <span>Phone: ${body.phone}</span><br />
+            <span>Subject: Message from ${body.name}</span><br />
             <span>Message: ${body.message}</span><br />
         </div>
-    `;
-
-    const text = `
-        From: ${body.from}
-        Name: ${body.name}
-        Email: ${body.email}
-        Phone: ${body.phone}
-        Subject: New message from ${body.name}
-        Message: ${body.message}
     `;
 
     const message: Message = {
         to: process.env.EMAIL_RECIPIENT,
         from: process.env.EMAIL_SENDER,
-        name: body.name,
-        phone: body.phone !== null ? body.phone : null,
         subject: `New message from ${body.name}`,
         message: body.message,
-        text: text,
         html: html,
     };
 
