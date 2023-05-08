@@ -48,18 +48,31 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
 
     const html = `
         <div>
-            <span>From: ${body.from}</span><br />
+            <span>From: ${body.name}</span><br />
+            <span>Email: ${body.email}</span>
+            <span>Phone: ${body.phone}</span>
             <span>Subject: ${body.subject}</span><br />
-            <span>Message: ${body.body}</span><br />
+            <span>Message: ${body.message}</span><br />
         </div>
+    `;
+
+    const text = `
+        From: ${body.from}
+        Name: ${body.name}
+        Email: ${body.email}
+        Phone: ${body.phone}
+        Subject: New message from ${body.name}
+        Message: ${body.message}
     `;
 
     const message: Message = {
         to: process.env.EMAIL_RECIPIENT,
         from: process.env.EMAIL_SENDER,
+        name: body.name,
         phone: body.phone !== null ? body.phone : null,
-        subject: body.subject,
-        text: body.body,
+        subject: `New message from ${body.name}`,
+        message: body.message,
+        text: text,
         html: html,
     };
 
