@@ -5,9 +5,6 @@ const sgMail = require('@sendgrid/mail');
 const validEmail: RegExp = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
 const sendMail = async (message: Message) => {
-    console.log(message);
-
-    console.log(process.env.SENDGRID_API_KEY);
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     // let status = '';
@@ -49,13 +46,21 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
         return response.status(400).send('Invalid email address');
     }
 
+    const html = `
+        <div>
+            <span>From: ${body.from}</span><br />
+            <span>Subject: ${body.subject}</span><br />
+            <span>Message: ${body.body}</span><br />
+        </div>
+    `;
+
     const message: Message = {
         to: process.env.EMAIL_RECIPIENT,
         from: process.env.EMAIL_SENDER,
         phone: body.phone !== null ? body.phone : null,
         subject: body.subject,
         text: body.body,
-        html: '<div>body.body</div>',
+        html: html,
     };
 
     try {
