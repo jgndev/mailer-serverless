@@ -4,17 +4,26 @@ const sgMail = require('@sendgrid/mail');
 
 const validEmail: RegExp = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
-const sendMail = (message: Message) => {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+const sendMail = async (message: Message) => {
+    console.log(message);
 
-    sgMail
+    console.log(process.env.SENDGRID_API_KEY);
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    // let status = '';
+
+    await sgMail
         .send(message)
         .then(() => {
-            console.log("Message sent")
+            console.log(`Message sent to ${message.to}`);
         })
         .catch((error) => {
+            console.log('Error sending email');
             console.log(error);
-        })
+            if (error.response) {
+                console.error(error.response.body);
+            }
+        });
 }
 
 const allowCors = fn => async (req, res) => {
@@ -33,7 +42,6 @@ const allowCors = fn => async (req, res) => {
 }
 
 const handler = async (request: VercelRequest, response: VercelResponse) => {
-    console.log("In the function!");
     const body = request.body;
 
     // Don't send an email with an invalid email address.
@@ -43,14 +51,15 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
 
     const message: Message = {
         to: process.env.EMAIL_RECIPIENT,
-        from: body.from,
+        from: process.env.EMAIL_SENDER,
         phone: body.phone !== null ? body.phone : null,
         subject: body.subject,
-        body: body.body,
+        text: body.body,
+        html: '<div>body.body</div>',
     };
 
     try {
-        sendMail(message);
+        await sendMail(message);
         return response.status(200).send("Email sent!");
     } catch (error) {
         console.error(error);

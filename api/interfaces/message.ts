@@ -3,5 +3,6 @@ export interface Message {
     from: string,
     phone: string | null,
     subject: string,
-    body: string,
+    text: string,
+    html: string,
 }
