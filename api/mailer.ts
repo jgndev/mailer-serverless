@@ -1,23 +1,76 @@
 import {VercelRequest, VercelResponse} from "@vercel/node";
 import {Message} from "./interfaces/message";
 import {MessageRequest} from "./interfaces/messageRequest";
+import {Credentials} from 'aws-sdk';
+
+const AWS = require('aws-sdk');
 const sgMail = require('@sendgrid/mail');
+
+AWS.config.update({region: process.env.AWS_REGION});
+
+const getDynamoClient = async () => {
+    const credentials = await getAwsCredentials();
+    return new AWS.DynamoDB.DocumentClient({
+        region: process.env.AWS_REGION,
+        credentials,
+    });
+}
+
+const getAwsCredentials = (): Credentials => {
+    return new Credentials({
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    });
+}
 
 const sendMail = async (message: Message) => {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-    await sgMail
-        .send(message)
-        .then(() => {
-            console.log(`Message sent to ${message.to}`);
-        })
-        .catch((error) => {
-            console.log('Error sending email');
-            console.log(error);
-            if (error.response) {
-                console.error(error.response.body);
+    try {
+        await sgMail.send(message);
+
+        const db = await getDynamoClient();
+        const timestamp = new Date().toISOString();
+
+        const params = {
+            TableName: 'jgnovak-com-sent-messages',
+            Item: {
+                'PK': `MESSAGE#${timestamp}`,
+                'SK': `MESSAGE#${timestamp}`,
+                'message-log': `MESSAGE#${timestamp}`,
+                'to': message.to,
+                'from': message.from,
+                'subject': message.subject,
+                'html': message.html,
+                'timestamp': timestamp,
+                'status': 'success'
             }
-        });
+        };
+
+        await db.put(params).promise();
+        console.log(`[SUCCESS]: Message logged to DynamoDB`);
+
+    } catch (error) {
+        const db = await getDynamoClient();
+        const timestamp = new Date().toISOString();
+        const params = {
+            TableName: 'jgnovak-com-sent-messages',
+            Item: {
+                'PK': `MESSAGE#${timestamp}`,
+                'SK': `MESSAGE#${timestamp}`,
+                'message-log': `MESSAGE#${timestamp}`,
+                'to': message.to,
+                'from': message.from,
+                'subject': message.subject,
+                'html': message.html,
+                'timestamp': timestamp,
+                'status': 'error'
+            }
+        };
+
+        await db.put(params).promise();
+        console.log(`[ERROR]: Problem sending the message. ${error}`);
+    }
 }
 
 const allowCors = fn => async (req, res) => {
