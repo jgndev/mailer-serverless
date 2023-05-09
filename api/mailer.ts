@@ -36,10 +36,7 @@ const allowCors = fn => async (req, res) => {
 }
 
 const handler = async (request: VercelRequest, response: VercelResponse) => {
-    console.log(request.body);
     const body = request.body as MessageRequest;
-
-    console.log(body);
 
     const html = `
         <div>
@@ -55,7 +52,6 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
         to: process.env.EMAIL_RECIPIENT,
         from: process.env.EMAIL_SENDER,
         subject: `New message from ${body.name}`,
-        message: body.message,
         html: html,
     };
 
